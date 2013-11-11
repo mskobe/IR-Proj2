@@ -1,4 +1,6 @@
 import subprocess
+import requests
+from bs4 import BeautifulSoup
 global queries
 
 
@@ -66,27 +68,47 @@ def stopping(query):
     return query
 
 
-def stemming():
+def stemming(query):
     f = open('stem-classes.lst', 'r')
-    cmd_list = []
+    f2 = open('requests_url', 'w')
     stemming_list = []
-    grep_cmd = 'grep -i -w' + ' dofesfet' + \
-               ' ~/Dropbox/homework/IR-PROJ2/stem-classes.lst'
-    process = subprocess.Popen(grep_cmd, stdout=subprocess.PIPE, shell=True)
-    temp = process.communicate()[0]
-    cmd_list.append(temp)
-    print cmd_list
-    #for line in f:
-        #line = line.rstrip('\n')
-        #line = line.split('|')
-        #temp = []
-        #for ele in line:
-            #ele = ele.strip()
-            #temp.append(ele)
-        #stemming_list.append(temp)
-    print stemming_list
+    file_address = ' ~/Dropbox/homework/IR-PROJ2/stem-classes.lst'
+    for i in range(0, len(query)):
+        for j in range(0, len(query[i])):
+            grep_cmd = 'grep -w ' + query[i][j] + file_address
+            process = subprocess.Popen(\
+                      grep_cmd, stdout=subprocess.PIPE, shell=True)
+            temp = process.communicate()[0]
+            if temp != '':
+                stem = temp.split('|')
+                query[i][j] = stem[0].strip()
+            else:
+                pass
+        print query[i]
+    return query
+
+
+def send_request(query):
+    f = open('requests_url', 'w')
+    f2 = open('parsed_html', 'w')
+    for i in range(0, len(query)):
+        make_url = 'http://fiji4.ccs.neu.edu/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
+        for j in range(1, len(query[i])):
+            print query[i][1]
+            make_url += '&v=' + query[i][j]
+        f.write(make_url)
+        f.write('\n')
+        r = requests.get(make_url)
+        html = r.text
+        soup = BeautifulSoup(html)
+        parsed_html = soup.body
+        f2.writelines(parsed_html)
+        f2.write('\n\n')
+    f.close()
+    f2.close()
 
 
 queries = get_query()
 queries_after_stopping = stopping(queries)
-stemming()
+queries_after_stemming = stemming(queries_after_stopping)
+send_request(queries_after_stemming)
