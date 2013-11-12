@@ -1,6 +1,7 @@
 import subprocess
 import requests
-from bs4 import BeautifulSoup
+import re
+#from bs4 import BeautifulSoup
 global queries
 
 
@@ -21,8 +22,8 @@ def get_query():
 def parse_query(line):
     query = line.split(' ')
     temp = []
-    for i in range(0, len(query)):
-        if query[i] == '':
+    for i in range(1, len(query)):
+        if query[i] == '' or query[i] == 'Document':
             pass
         elif query[i].find('-') != -1:
             query[i] = parse_helper(query[i])
@@ -72,8 +73,10 @@ def stemming(query):
     f = open('stem-classes.lst', 'r')
     f2 = open('requests_url', 'w')
     stemming_list = []
+    query_length = 0
     file_address = ' ~/Dropbox/homework/IR-PROJ2/stem-classes.lst'
     for i in range(0, len(query)):
+        query_length += len(query[i])
         for j in range(0, len(query[i])):
             grep_cmd = 'grep -w ' + query[i][j] + file_address
             process = subprocess.Popen(\
@@ -85,30 +88,41 @@ def stemming(query):
             else:
                 pass
         print query[i]
-    return query
+    avg_query_len = float(query_length) / 25
+    print avg_query_len
+    return query, avg_query_len
 
 
-def send_request(query):
+def send_request(query, avg_query_len):
     f = open('requests_url', 'w')
-    f2 = open('parsed_html', 'w')
+    #f2 = open('parsed_html', 'w')
     for i in range(0, len(query)):
-        make_url = 'http://fiji4.ccs.neu.edu/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
         for j in range(1, len(query[i])):
-            print query[i][1]
+            make_url = 'http://fiji4.ccs.neu.edu/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
             make_url += '&v=' + query[i][j]
-        f.write(make_url)
-        f.write('\n')
-        r = requests.get(make_url)
-        html = r.text
-        soup = BeautifulSoup(html)
-        parsed_html = soup.body
-        f2.writelines(parsed_html)
-        f2.write('\n\n')
+            f.write(make_url)
+            f.write('\n')
+            r = requests.get(make_url)
+            html = r.text
+            parsed_html = re.compile(r'.*?<BODY>(.*?)<HR>',re.DOTALL).match(html).group(1)
+            numbers = re.compile(r'(\d+)',re.DOTALL).findall(parsed_html)
+            ctf, df = float(numbers[0]), float(numbers[1])
+            inverted_list = map(lambda i: (int(numbers[2 + 3*i]), \
+                                           float(numbers[3 + 3*i]),\
+                                           float(numbers[4 + 3*i]))\
+                                ,range(0, (len(numbers) - 2)/3))
+            print "ctf= %(ctf)f df= %(df)f" % {'ctf': ctf, 'df':df}
+            for (docid,doclen,tf) in inverted_list:
+                print docid,doclen,tf
+        #soup = BeautifulSoup(html)
+        #parsed_html = soup.body
+        #f2.writelines(parsed_html)
+        #f2.write('\n\n')
     f.close()
-    f2.close()
+    #f2.close()
 
 
 queries = get_query()
 queries_after_stopping = stopping(queries)
-queries_after_stemming = stemming(queries_after_stopping)
-send_request(queries_after_stemming)
+queries_after_stemming, avg_query_len = stemming(queries_after_stopping)
+#send_request(queries_after_stemming, avg_query_len)
