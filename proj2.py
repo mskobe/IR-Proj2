@@ -70,7 +70,8 @@ def stopping(query):
 
 def stemming(query):
     query_length = 0
-    file_address = ' ~/Dropbox/homework/IR-PROJ2/stem-classes.lst'
+    #file_address = ' ~/Dropbox/homework/IR-PROJ2/stem-classes.lst'
+    file_address = 'stem-classes.lst'
     for i in range(0, len(query)):
         query_length += len(query[i])
         for j in range(0, len(query[i])):
@@ -96,7 +97,8 @@ def send_request(query, avg_query_len):
         score = {}
         query_length = len(query[i])
         for j in range(1, len(query[i])):
-            make_url = 'http://fiji4.ccs.neu.edu/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
+            #make_url = 'http://fiji4.ccs.neu.edu/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
+            make_url = 'http://10.0.0.176/~zerg/lemurcgi/lemur.cgi?d=3&g=p'
             make_url += '&v=' + query[i][j]
             f.write(make_url)
             f.write('\n')
